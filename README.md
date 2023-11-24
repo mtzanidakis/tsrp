@@ -1,4 +1,4 @@
-# Reverse HTTPS proxy for Tailscale
+# HTTPS reverse proxy for Tailscale
 
 Expose web services to your tailnet as separate devices, with TLS.
 
