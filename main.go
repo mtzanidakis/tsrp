@@ -15,6 +15,7 @@ type config struct {
 	Backend   string `env:"BACKEND" envDefault:"http://127.0.0.1:8080"`
 	Hostname  string `env:"HOSTNAME"`
 	Port      int    `env:"PORT" envDefault:"443"`
+	HTTPPort  int    `env:"HTTP_PORT" envDefault:"80"`
 	StateDir  string `env:"STATE_DIR,expand" envDefault:"/var/lib/tsrp"`
 	TSAuthkey string `env:"TS_AUTHKEY"`
 	Verbose   bool   `env:"VERBOSE" envDefault:"false"`
@@ -43,12 +44,21 @@ func main() {
 	}
 	defer tss.Close()
 
-	ln, err := tss.ListenTLS("tcp", fmt.Sprintf(":%d", cfg.Port))
+	// Start HTTP listener for redirects
+	httpLn, err := tss.Listen("tcp", fmt.Sprintf(":%d", cfg.HTTPPort))
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer ln.Close()
+	defer httpLn.Close()
 
+	// Start HTTPS listener
+	tlsLn, err := tss.ListenTLS("tcp", fmt.Sprintf(":%d", cfg.Port))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer tlsLn.Close()
+
+	// Set up reverse proxy
 	rp := httputil.NewSingleHostReverseProxy(backendUrl)
 	rp.ErrorHandler = func(
 		w http.ResponseWriter,
@@ -59,6 +69,20 @@ func main() {
 		log.Printf("backend error: %s", err)
 	}
 
-	log.Printf("start reverse proxy to %s", cfg.Backend)
-	log.Fatal(http.Serve(ln, rp))
+	// HTTP redirect handler
+	redirectHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		httpsURL := fmt.Sprintf("https://%s%s", r.Host, r.RequestURI)
+		http.Redirect(w, r, httpsURL, http.StatusMovedPermanently)
+	})
+
+	// Start both servers
+	log.Printf("starting HTTP redirect server on port %d", cfg.HTTPPort)
+	go func() {
+		if err := http.Serve(httpLn, redirectHandler); err != nil {
+			log.Printf("HTTP server error: %v", err)
+		}
+	}()
+
+	log.Printf("starting HTTPS reverse proxy to %s on port %d", cfg.Backend, cfg.Port)
+	log.Fatal(http.Serve(tlsLn, rp))
 }
