@@ -8,7 +8,8 @@ The following configuration options are available, passed as environment variabl
 
 - `BACKEND`: the backend service url, default: `http://127.0.0.1:8080`.
 - `HOSTNAME`: the tailnet hostname for the service.
-- `PORT`: the port the service listens on, default: `443`.
+- `HTTP_PORT`: the http port the service listens on for redirecting to https, default: `80`.
+- `HTTPS_PORT`: the port the service listens on, default: `443`.
 - `STATE_DIR`: the state store directory, default: `/var/lib/tsrp`.
 - `TS_AUTHKEY`: the auth key to create the node in Tailscale.
 - `VERBOSE`: show tailscale logs, default: `false`.

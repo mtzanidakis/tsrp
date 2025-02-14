@@ -14,8 +14,8 @@ import (
 type config struct {
 	Backend   string `env:"BACKEND" envDefault:"http://127.0.0.1:8080"`
 	Hostname  string `env:"HOSTNAME"`
-	Port      int    `env:"PORT" envDefault:"443"`
 	HTTPPort  int    `env:"HTTP_PORT" envDefault:"80"`
+	HTTPSPort int    `env:"HTTPS_PORT" envDefault:"443"`
 	StateDir  string `env:"STATE_DIR,expand" envDefault:"/var/lib/tsrp"`
 	TSAuthkey string `env:"TS_AUTHKEY"`
 	Verbose   bool   `env:"VERBOSE" envDefault:"false"`
@@ -52,7 +52,7 @@ func main() {
 	defer httpLn.Close()
 
 	// Start HTTPS listener
-	tlsLn, err := tss.ListenTLS("tcp", fmt.Sprintf(":%d", cfg.Port))
+	tlsLn, err := tss.ListenTLS("tcp", fmt.Sprintf(":%d", cfg.HTTPSPort))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -83,6 +83,6 @@ func main() {
 		}
 	}()
 
-	log.Printf("starting HTTPS reverse proxy to %s on port %d", cfg.Backend, cfg.Port)
+	log.Printf("starting HTTPS reverse proxy to %s on port %d", cfg.Backend, cfg.HTTPSPort)
 	log.Fatal(http.Serve(tlsLn, rp))
 }
