@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -13,6 +14,7 @@ import (
 
 type config struct {
 	Backend   string `env:"BACKEND" envDefault:"http://127.0.0.1:8080"`
+	Funnel    bool   `env:"FUNNEL" envDefault:"false"`
 	Hostname  string `env:"HOSTNAME"`
 	HTTPPort  int    `env:"HTTP_PORT" envDefault:"80"`
 	HTTPSPort int    `env:"HTTPS_PORT" envDefault:"443"`
@@ -52,9 +54,27 @@ func main() {
 	defer httpLn.Close()
 
 	// Start HTTPS listener
-	tlsLn, err := tss.ListenTLS("tcp", fmt.Sprintf(":%d", cfg.HTTPSPort))
-	if err != nil {
-		log.Fatal(err)
+	var (
+		tlsLn   net.Listener
+		logMess string
+	)
+
+	if cfg.Funnel {
+		// if cfg.Port is not 443 or 8443, or 10000 fail
+		if cfg.HTTPSPort != 443 && cfg.HTTPSPort != 8443 && cfg.HTTPSPort != 10000 {
+			log.Fatal("Funnel mode requires port 443, 8443 or 10000")
+		}
+
+		tlsLn, err = tss.ListenFunnel("tcp", fmt.Sprintf(":%d", cfg.HTTPSPort))
+		if err != nil {
+			log.Fatal(err)
+		}
+		logMess = " [funnel]"
+	} else {
+		tlsLn, err = tss.ListenTLS("tcp", fmt.Sprintf(":%d", cfg.HTTPSPort))
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	defer tlsLn.Close()
 
@@ -83,6 +103,6 @@ func main() {
 		}
 	}()
 
-	log.Printf("starting HTTPS reverse proxy to %s on port %d", cfg.Backend, cfg.HTTPSPort)
+	log.Printf("starting HTTPS reverse proxy to %s on port %d%s", cfg.Backend, cfg.HTTPSPort, logMess)
 	log.Fatal(http.Serve(tlsLn, rp))
 }
