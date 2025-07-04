@@ -1,11 +1,10 @@
 FROM golang:1.24.3-alpine AS builder
 RUN apk update && \
-	apk add --no-cache make ca-certificates tzdata upx && \
+	apk add --no-cache make ca-certificates tzdata && \
 	update-ca-certificates
 WORKDIR /src
 COPY . .
 RUN make build-static
-RUN upx --best --lzma tsrp
 
 FROM scratch
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
