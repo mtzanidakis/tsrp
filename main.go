@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"sync"
+	"time"
 
 	"github.com/caarlos0/env/v11"
 	"tailscale.com/tsnet"
@@ -21,6 +23,18 @@ type config struct {
 	StateDir  string `env:"STATE_DIR,expand" envDefault:"/var/lib/tsrp"`
 	TSAuthkey string `env:"TS_AUTHKEY"`
 	Verbose   bool   `env:"VERBOSE" envDefault:"false"`
+}
+
+type bufferPool struct {
+	pool sync.Pool
+}
+
+func (bp *bufferPool) Get() []byte {
+	return bp.pool.Get().([]byte)
+}
+
+func (bp *bufferPool) Put(buf []byte) {
+	bp.pool.Put(buf)
 }
 
 func main() {
@@ -78,8 +92,32 @@ func main() {
 	}
 	defer tlsLn.Close()
 
-	// Set up reverse proxy
+	// Set up optimized HTTP transport
+	transport := &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout:   5 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		TLSHandshakeTimeout:   5 * time.Second,
+		ResponseHeaderTimeout: 10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		MaxIdleConns:          100,
+		MaxIdleConnsPerHost:   100,
+		IdleConnTimeout:       90 * time.Second,
+		DisableKeepAlives:     false,
+	}
+
+	// Set up reverse proxy with optimizations
 	rp := httputil.NewSingleHostReverseProxy(backendUrl)
+	rp.Transport = transport
+	rp.FlushInterval = 100 * time.Millisecond
+	rp.BufferPool = &bufferPool{
+		pool: sync.Pool{
+			New: func() interface{} {
+				return make([]byte, 32*1024)
+			},
+		},
+	}
 	rp.ErrorHandler = func(
 		w http.ResponseWriter,
 		r *http.Request,
