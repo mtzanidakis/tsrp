@@ -4,7 +4,7 @@ go 1.25.3
 
 require (
 	github.com/caarlos0/env/v11 v11.3.1
-	tailscale.com v1.90.2
+	tailscale.com v1.90.3
 )
 
 require (
