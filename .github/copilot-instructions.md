@@ -8,7 +8,7 @@ This is a Go-based HTTPS reverse proxy for Tailscale that exposes web services t
 
 - **Language**: Go 1.25+
 - **Key Dependencies**:
-  - `tailscale.com/tsnet` - Tailscale networking library
+  - `tailscale.com` - Tailscale module (using `tsnet` subpackage for networking)
   - `github.com/caarlos0/env/v11` - Environment variable parsing
 - **Container**: Docker (multi-stage build with scratch base image)
 
