@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"sync"
 	"time"
 
@@ -50,9 +51,22 @@ func main() {
 		log.Fatal(err)
 	}
 
+	stateDir := fmt.Sprintf("%s/%s", cfg.StateDir, cfg.Hostname)
+
+	// Only use the auth key if there is no existing state, to avoid
+	// errors when the key has expired or been revoked after initial
+	// authentication.
+	authKey := cfg.TSAuthkey
+	if _, err := os.Stat(fmt.Sprintf("%s/tailscaled.state", stateDir)); err == nil {
+		if authKey != "" {
+			log.Printf("state already exists in %s; ignoring TS_AUTHKEY. Remove the state directory to re-authenticate.", stateDir)
+		}
+		authKey = ""
+	}
+
 	tss := &tsnet.Server{
-		AuthKey:  cfg.TSAuthkey,
-		Dir:      fmt.Sprintf("%s/%s", cfg.StateDir, cfg.Hostname),
+		AuthKey:  authKey,
+		Dir:      stateDir,
 		Hostname: cfg.Hostname,
 	}
 	if !cfg.Verbose {
