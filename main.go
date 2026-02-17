@@ -62,6 +62,10 @@ func main() {
 			log.Printf("state already exists in %s; ignoring TS_AUTHKEY. Remove the state directory to re-authenticate.", stateDir)
 		}
 		authKey = ""
+		// Also clear the environment variable, as tsnet.Server falls
+		// back to reading TS_AUTHKEY from the environment directly.
+		os.Unsetenv("TS_AUTHKEY")
+		os.Unsetenv("TS_AUTH_KEY")
 	}
 
 	tss := &tsnet.Server{
