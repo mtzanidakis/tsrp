@@ -2,30 +2,32 @@ name: CI
 
 on:
   push:
-  pull_request:
     branches: [main]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
 
-      - name: Set up mise
-        uses: jdx/mise-action@v4
+      - uses: jdx/mise-action@v4
+        with:
+          experimental: true
 
-      - name: Run linter
-        run: make lint
+      - run: make lint
 
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
 
-      - name: Set up mise
-        uses: jdx/mise-action@v4
+      - uses: jdx/mise-action@v4
+        with:
+          experimental: true
 
-      - name: Run tests
-        run: make test
+      - run: make test
