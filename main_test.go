@@ -11,8 +11,8 @@ import (
 
 func TestConfigDefaults(t *testing.T) {
 	os.Clearenv()
-	os.Setenv("HOSTNAME", "test-host")
-	os.Setenv("TS_AUTHKEY", "test-key")
+	t.Setenv("HOSTNAME", "test-host")
+	t.Setenv("TS_AUTHKEY", "test-key")
 
 	cfg := config{}
 	opts := env.Options{RequiredIfNoDef: true}
@@ -43,14 +43,14 @@ func TestConfigDefaults(t *testing.T) {
 
 func TestConfigCustomValues(t *testing.T) {
 	os.Clearenv()
-	os.Setenv("BACKEND", "http://192.168.1.100:3000")
-	os.Setenv("FUNNEL", "true")
-	os.Setenv("HOSTNAME", "custom-host")
-	os.Setenv("HTTP_PORT", "8080")
-	os.Setenv("HTTPS_PORT", "8443")
-	os.Setenv("STATE_DIR", "/tmp/tsrp")
-	os.Setenv("TS_AUTHKEY", "custom-key")
-	os.Setenv("VERBOSE", "true")
+	t.Setenv("BACKEND", "http://192.168.1.100:3000")
+	t.Setenv("FUNNEL", "true")
+	t.Setenv("HOSTNAME", "custom-host")
+	t.Setenv("HTTP_PORT", "8080")
+	t.Setenv("HTTPS_PORT", "8443")
+	t.Setenv("STATE_DIR", "/tmp/tsrp")
+	t.Setenv("TS_AUTHKEY", "custom-key")
+	t.Setenv("VERBOSE", "true")
 
 	cfg := config{}
 	opts := env.Options{RequiredIfNoDef: true}

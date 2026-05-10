@@ -31,11 +31,11 @@ type bufferPool struct {
 }
 
 func (bp *bufferPool) Get() []byte {
-	return bp.pool.Get().([]byte)
+	return *bp.pool.Get().(*[]byte)
 }
 
 func (bp *bufferPool) Put(buf []byte) {
-	bp.pool.Put(buf)
+	bp.pool.Put(&buf)
 }
 
 func main() {
@@ -64,8 +64,8 @@ func main() {
 		authKey = ""
 		// Also clear the environment variable, as tsnet.Server falls
 		// back to reading TS_AUTHKEY from the environment directly.
-		os.Unsetenv("TS_AUTHKEY")
-		os.Unsetenv("TS_AUTH_KEY")
+		_ = os.Unsetenv("TS_AUTHKEY")
+		_ = os.Unsetenv("TS_AUTH_KEY")
 	}
 
 	tss := &tsnet.Server{
@@ -76,14 +76,14 @@ func main() {
 	if !cfg.Verbose {
 		tss.Logf = func(string, ...any) {}
 	}
-	defer tss.Close()
+	defer func() { _ = tss.Close() }()
 
 	// Start HTTP listener for redirects
 	httpLn, err := tss.Listen("tcp", fmt.Sprintf(":%d", cfg.HTTPPort))
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer httpLn.Close()
+	defer func() { _ = httpLn.Close() }()
 
 	// Start HTTPS listener
 	var (
@@ -108,7 +108,7 @@ func main() {
 			log.Fatal(err)
 		}
 	}
-	defer tlsLn.Close()
+	defer func() { _ = tlsLn.Close() }()
 
 	// Set up optimized HTTP transport
 	transport := &http.Transport{
@@ -131,8 +131,9 @@ func main() {
 	rp.FlushInterval = 100 * time.Millisecond
 	rp.BufferPool = &bufferPool{
 		pool: sync.Pool{
-			New: func() interface{} {
-				return make([]byte, 32*1024)
+			New: func() any {
+				b := make([]byte, 32*1024)
+				return &b
 			},
 		},
 	}
