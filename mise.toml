@@ -2,6 +2,9 @@
 go = "1.26.3"
 golangci-lint = "2.12.2"
 
+[env]
+_.file = ".env"
+
 [tasks.lint]
 description = "Run golangci-lint"
 run = "golangci-lint run"
