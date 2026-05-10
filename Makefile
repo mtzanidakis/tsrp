@@ -12,3 +12,7 @@ build-static:
 .PHONY: test
 test:
 	go test -v
+
+.PHONY: lint
+lint:
+	mise run lint
