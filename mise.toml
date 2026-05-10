@@ -8,3 +8,7 @@ _.file = ".env"
 [tasks.lint]
 description = "Run golangci-lint"
 run = "golangci-lint run"
+
+[tasks.test]
+description = "Run go tests"
+run = "go test -v ./..."
