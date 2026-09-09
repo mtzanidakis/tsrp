@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net"
@@ -12,6 +14,7 @@ import (
 	"time"
 
 	"github.com/caarlos0/env/v11"
+	"tailscale.com/ipn"
 	"tailscale.com/tsnet"
 )
 
@@ -24,6 +27,33 @@ type config struct {
 	StateDir  string `env:"STATE_DIR,expand" envDefault:"/var/lib/tsrp"`
 	TSAuthkey string `env:"TS_AUTHKEY"`
 	Verbose   bool   `env:"VERBOSE" envDefault:"false"`
+}
+
+// ctxConn is the key under which the accepted net.Conn is stored in a
+// request's context, so handlers can inspect the connection it arrived on.
+type ctxConn struct{}
+
+// clientIP returns the address of the client that actually originated the
+// request.
+//
+// For a Funnel connection r.RemoteAddr is the Tailscale relay node that
+// forwarded the request, which is the same handful of addresses for every
+// client on the internet. The originating address is carried separately on
+// ipn.FunnelConn.Src, so prefer that when the request arrived over Funnel.
+// Direct tailnet connections already have the peer's own address.
+func clientIP(r *http.Request) (string, bool) {
+	conn, _ := r.Context().Value(ctxConn{}).(net.Conn)
+	// Funnel and TLS listeners hand us a *tls.Conn wrapping the real one.
+	if tlsConn, ok := conn.(*tls.Conn); ok {
+		conn = tlsConn.NetConn()
+	}
+	if fc, ok := conn.(*ipn.FunnelConn); ok && fc.Src.IsValid() {
+		return fc.Src.Addr().String(), true
+	}
+	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		return host, true
+	}
+	return "", false
 }
 
 type bufferPool struct {
@@ -126,7 +156,23 @@ func main() {
 	}
 
 	// Set up reverse proxy with optimizations
-	rp := httputil.NewSingleHostReverseProxy(backendUrl)
+	rp := &httputil.ReverseProxy{
+		Rewrite: func(pr *httputil.ProxyRequest) {
+			pr.SetURL(backendUrl)
+			// SetURL clears Host; keep forwarding the name the client
+			// asked for, as the previous Director did.
+			pr.Out.Host = pr.In.Host
+
+			// tsrp is the edge, so any X-Forwarded-For the client sent is
+			// unverifiable. Replace it rather than appending to it, so the
+			// backend receives exactly one address that we vouch for.
+			if ip, ok := clientIP(pr.In); ok {
+				pr.Out.Header.Set("X-Forwarded-For", ip)
+			} else {
+				pr.Out.Header.Del("X-Forwarded-For")
+			}
+		},
+	}
 	rp.Transport = transport
 	rp.FlushInterval = 100 * time.Millisecond
 	rp.BufferPool = &bufferPool{
@@ -161,5 +207,11 @@ func main() {
 	}()
 
 	log.Printf("starting HTTPS reverse proxy to %s on port %d%s", cfg.Backend, cfg.HTTPSPort, logMess)
-	log.Fatal(http.Serve(tlsLn, rp))
+	srv := &http.Server{
+		Handler: rp,
+		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
+			return context.WithValue(ctx, ctxConn{}, c)
+		},
+	}
+	log.Fatal(srv.Serve(tlsLn))
 }
