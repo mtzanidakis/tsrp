@@ -3,7 +3,7 @@ module github.com/mtzanidakis/tsrp
 go 1.27.3
 
 require (
-	github.com/caarlos0/env/v11 v11.4.1
+	github.com/caarlos0/env/v11 v11.4.2
 	tailscale.com v1.104.4
 )
 
