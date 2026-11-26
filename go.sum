@@ -48,8 +48,8 @@ github.com/benbjohnson/immutable v0.4.3 h1:GYHcksoJ9K6HyAUpGxwZURrbTkXA0Dh4otXGq
 github.com/benbjohnson/immutable v0.4.3/go.mod h1:qJIKKSmdqz1tVzNtst1DZzvaqOU1onk1rc03IeM3Owk=
 github.com/bradfitz/reco v0.0.0-20260929154613-b883fbd17e3f h1:jdXGSp5Ge5/kzikuxGOw9+6HSStUjkNBJZjGNtpItek=
 github.com/bradfitz/reco v0.0.0-20260929154613-b883fbd17e3f/go.mod h1:oiCPXxBoDKSkb/RGEZwAZk8y/fwDlQ1vYlBbNRxPysw=
-github.com/caarlos0/env/v11 v11.4.1 h1:fYwH0sWEsBSMPG7t4e/PEfTFzrWrpjyygXyUnWiSwEw=
-github.com/caarlos0/env/v11 v11.4.1/go.mod h1:qupehSf/Y0TUTsxKywqRt/vJjN5nz6vauiYEUUr8P4U=
+github.com/caarlos0/env/v11 v11.4.2 h1:fosEVW/SjFBBzATf+buI6vsAfOzXxPrchST/RNzmBWQ=
+github.com/caarlos0/env/v11 v11.4.2/go.mod h1:sH0CUPGS25jkIKlk2q4qs0c+C7y++K7W3crU70JVB/k=
 github.com/cilium/ebpf v0.22.0 h1:v2ktp0roffpMOj2MMf3idtCQZOsAoC4BJbAJN+ke2bY=
 github.com/cilium/ebpf v0.22.0/go.mod h1:CDzZbe2hC5JjlDC+CY3KFCzlYwN4gbxppYM+Z10bQt4=
 github.com/coder/websocket v1.8.15 h1:6B2JPeOGlpff2Uz6vOEH1Vzpi0iUz20A+lPVhPHtNUA=
